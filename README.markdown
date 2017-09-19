@@ -253,11 +253,14 @@ Adds new tag to the list. The `additionalClass` parameter is an optional way to 
     $("#myTags").tagit("createTag", "brand-new-tag");
 
 ### preprocessTag(function, Callback)
-Set a function to be called before tag is created. Callback receives the
-value of the tag created.
+Set a function to be called before a tag is created.
+Callback: (string: input_value, pasted: boolean) => string | string[] | undefined;
+It receives the value of the input, and whether it was a paste event. Return a string or an array
+of strings and the correpsonding tags will be created. Return undefined or empty string to not create
+tags.
 
     // ensure all tags are capitalized
-    $(#tag-it").tagit("preprocessTag", function(val) {
+    $(#tag-it").tagit("preprocessTag", function(val, pasted) {
       if (!val) { return ''; }
       return val[0].toUpperCase() + val.slice(1, val.length);
     });
