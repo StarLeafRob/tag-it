@@ -93,6 +93,7 @@
 
             onTagClicked        : null,
             onTagLimitExceeded  : null,
+            emailInput          : false,
 
 
             // DEPRECATED:
@@ -123,8 +124,12 @@
             } else {
                 this.tagList = this.element.find('ul, ol').andSelf().last();
             }
-
-            this.tagInput = $('<input type="text" />').addClass('ui-widget-content');
+            if (this.options.emailInput) {
+                this.tagInput = $('<input type="email"/>');
+            } else {
+                this.tagInput = $('<input type="text"/>')
+            }
+            this.tagInput.addClass('ui-widget-content');
 
             if (this.options.readOnly) this.tagInput.attr('disabled', 'disabled');
 
@@ -268,7 +273,7 @@
                         // Autocomplete will create its own tag from a selection and close automatically.
                         if (!(that.options.autocomplete.autoFocus && that.tagInput.data('autocomplete-open'))) {
                             that.tagInput.autocomplete('close');
-                            that._createMultipleTags();
+                            that.createTag(that._cleanedInput());
                         }
                     }
                 }).blur(function(e){
@@ -283,9 +288,11 @@
                             return;
                         }
                     }
-                    that._createMultipleTags();
+                    that.createTag(that._cleanedInput());
                 }).bind('paste', function (e) {
-                    setTimeout(function (e) {that._createMultipleTags();}, 0);
+                    setTimeout(function (e) {
+                        that.createTag(that._cleanedInput(), undefined, false, true);
+                    }, 0);
                 });
 
             // Autocomplete.
@@ -358,18 +365,6 @@
             }
 
             return this;
-        },
-
-        // split input that has been entered containing whitespace and commas (e.g. by pasting in a list)
-        _createMultipleTags: function() {
-            var splitCleanedInputs= this._splitCleanedInput();
-            for (var i = 0; i < splitCleanedInputs.length; i++) {
-                this.createTag(splitCleanedInputs[i]);
-            }
-        },
-
-        _splitCleanedInput: function() {
-            return this._cleanedInput().split(/[,\s]+/);
         },
 
         _cleanedInput: function() {
@@ -457,19 +452,25 @@
             return Boolean($.effects && ($.effects[name] || ($.effects.effect && $.effects.effect[name])));
         },
 
-        createTag: function(value, additionalClass, duringInitialization) {
-            var that = this;
-
+        createTag: function (value, additionalClass, duringInitialization, paste) {
             value = $.trim(value);
-
-            if(this.options.preprocessTag) {
-                value = this.options.preprocessTag(value);
+            if (this.options.preprocessTag) {
+                value = this.options.preprocessTag(value, !!paste);
             }
-
-            if (value === '') {
+            if (!value) {
                 return false;
             }
+            if (value.constructor === Array) {
+                for (var i = 0; i < value.length; i++) {
+                    this._createTag(value[i], additionalClass, duringInitialization);
+                }
+            } else {
+                this._createTag(value, additionalClass, duringInitialization);
+            }
+        },
 
+        _createTag: function(value, additionalClass, duringInitialization) {
+            var that = this;
             if (!this.options.allowDuplicates && !this._isNew(value)) {
                 var existingTag = this._findTagByLabel(value);
                 if (this._trigger('onTagExists', null, {
